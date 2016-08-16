@@ -138,7 +138,7 @@ class CollabWrapper(GObject.GObject):
     on the sender's client
     '''
 
-    message = GObject.Signal('message', arg_types=[object, object])
+    message = GObject.Signal('message', arg_types=[object, str])
     joined = GObject.Signal('joined')
     buddy_joined = GObject.Signal('buddy_joined', arg_types=[object])
     buddy_left = GObject.Signal('buddy_left', arg_types=[object])
@@ -146,14 +146,11 @@ class CollabWrapper(GObject.GObject):
 
     def __init__(self, activity):
         GObject.GObject.__init__(self)
-        self.activity = activity
-        self.shared_activity = activity.shared_activity
-        self._leader = False
-        self._init_waiting = False
-        self._text_channel = None
+        self._activity_collab = activity._activity_collab
+        self._activity_collab.connect('received-text', self.received_text_cb)
 
-    def setup(self):
-        '''
+    '''def setup(self):
+        
         Setup must be called to so that the activity can join or share
         if appropriate.
 
@@ -163,7 +160,7 @@ class CollabWrapper(GObject.GObject):
             activity must have set up enough so these functions can
             work.  For example, place this at the end of the activity's
             `__init__` function.
-        '''
+        
         # Some glue to know if we are launching, joining, or resuming
         # a shared activity.
         if self.shared_activity:
@@ -188,7 +185,7 @@ class CollabWrapper(GObject.GObject):
                 _logger.debug('On-line')
                 self._alert(_('Resuming shared activity...'),
                             _('Please wait for the connection...'))
-            self.activity.connect('shared', self.__shared_cb)
+            self.activity.connect('shared', self.__shared_cb)'''
 
     def _alert(self, title, msg=None):
         a = NotifyAlert()
@@ -345,8 +342,17 @@ class CollabWrapper(GObject.GObject):
             msg (object): json encodable object to send to the other
                 buddies, eg. :class:`dict` or :class:`str`.
         '''
-        if self._text_channel is not None:
-            self._text_channel.post(msg)
+        txt = json.dumps(msg)
+        print "text sending"+txt
+        if self._activity_collab.is_leader:
+            self._activity_collab.broadcast_msg(txt)
+        else:
+            self._activity_collab.send_msg_req(txt)
+        print "Broadcasted msg"
+
+    def received_text_cb(self, receiver, msg):
+        print "got msg"+msg
+        self.message.emit('',msg)
 
     def __buddy_joined_cb(self, sender, buddy):
         '''A buddy joined.'''

@@ -465,11 +465,8 @@ class PhysicsActivity(activity.Activity):
 
     def __message_cb(self, collab, buddy, msg):
         ''' Data is passed as tuples: cmd:text '''
-        action = msg.get('action')
-        if action != 'text':
-            return
-
-        text = msg['text']
+        msg1 = json.loads(msg)
+        text = msg1['text']
         dispatch_table = {'C': self._construct_shared_circle,
                           'B': self._construct_shared_box,
                           'T': self._construct_shared_triangle,
